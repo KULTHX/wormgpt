@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChatMessage as ChatMessageType } from './types';
 import { initializeChat } from './services/geminiService';
@@ -26,11 +25,16 @@ const App: React.FC = () => {
         },
       ]);
     } catch (e) {
-      console.error(e);
-      if (e instanceof Error && e.message.includes("API_KEY")) {
-        setError('فشل تهيئة الدردشة. يرجى التأكد من أنك قمت بإضافة `API_KEY` إلى متغيرات البيئة (Environment Variables) في إعدادات مشروع Vercel الخاص بك.');
+      console.error("Error during chat initialization:", e);
+      const defaultError = 'فشل في تهيئة الدردشة. الرجاء المحاولة مرة أخرى لاحقاً.';
+      if (e instanceof Error) {
+        if (e.message.includes("API_KEY")) {
+          setError('فشل تهيئة الدردشة. يرجى التأكد من أنك قمت بإضافة `API_KEY` إلى متغيرات البيئة (Environment Variables) في إعدادات مشروع Vercel الخاص بك. بدون المفتاح، لا يمكن للتطبيق العمل.');
+        } else {
+          setError(`${defaultError} (${e.message})`);
+        }
       } else {
-        setError('فشل في تهيئة الدردشة. الرجاء المحاولة مرة أخرى لاحقاً.');
+        setError(defaultError);
       }
     } finally {
         setIsLoading(false);
@@ -87,7 +91,7 @@ const App: React.FC = () => {
     }
   };
 
-  if (isLoading && !error) {
+  if (isLoading && !chatHistory.length) {
     return (
         <div className="flex flex-col h-screen bg-gray-900 text-gray-200 font-sans items-center justify-center">
             <svg className="animate-spin h-10 w-10 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -118,7 +122,7 @@ const App: React.FC = () => {
         {chatHistory.map((msg, index) => (
           <ChatMessage key={index} message={msg} />
         ))}
-        {isLoading && chatHistory[chatHistory.length - 1].role === 'user' && (
+        {isLoading && chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user' && (
            <div className="flex justify-start">
              <div className="bg-gray-700 rounded-2xl p-4 max-w-2xl">
                 <div className="flex items-center space-x-2">
